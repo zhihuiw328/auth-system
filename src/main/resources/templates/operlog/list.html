@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<title>日志列表</title>
+	<meta name="renderer" content="webkit">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<link rel="stylesheet" th:href="@{/static/plugin/layui/css/layui.css}" media="all">
+	<link rel="stylesheet" th:href="@{/static/css/app.css}" media="all">
+</head>
+<body>
+<div class="searchTable">
+	操作描述：
+	<div class="layui-inline">
+		<input class="layui-input" name="s_operDesc" id="s_operDesc" autocomplete="off">
+	</div>
+	<button id="searchBtn" class="layui-btn" data-type="reload">搜索</button>
+</div>
+<table class="layui-hide" id="tb_operlog" lay-filter="tb_operlog"></table>
+
+<input type="text" id="ctx" hidden="hidden" th:value="${#request.getContextPath()}">
+
+<!--详情页-->
+<div class="layui-row" id="viewForm" style="display:none;">
+	<div class="layui-col-md10">
+		<form class="layui-form layui-from-pane" action="" style="margin-top:20px">
+			<input type="text" id="id" name="id" hidden="hidden">
+			<div class="layui-form-item">
+				<label class="layui-form-label">操作模块</label>
+				<div class="layui-input-block">
+					<input type="text" id="operModule" name="operModule" required lay-verify="required" autocomplete="off"
+						   placeholder="" class="layui-input" disabled>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">操作方法</label>
+				<div class="layui-input-block">
+					<textarea type="text" id="operMethod" name="operMethod" required lay-verify="required" autocomplete="off"
+							  placeholder="" class="layui-textarea code-view" disabled></textarea>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">操作描述</label>
+				<div class="layui-input-block">
+					<input type="text" id="operDesc" name="operDesc" required lay-verify="required" autocomplete="off"
+						   placeholder="" class="layui-input" disabled>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">操作类型</label>
+				<div class="layui-input-block">
+					<input type="text" id="operType" name="operType" required lay-verify="required" autocomplete="off"
+						   placeholder="" class="layui-input" disabled>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">请求方式</label>
+				<div class="layui-input-block">
+					<input type="text" id="reqMethod" name="reqMethod" required lay-verify="required" autocomplete="off"
+						   placeholder="" class="layui-input" disabled>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">请求参数</label>
+				<div class="layui-input-block">
+					<textarea type="text" id="operParam" name="operParam" required lay-verify="required" autocomplete="off"
+							  placeholder="" class="layui-textarea code-view" disabled></textarea>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">请求IP</label>
+				<div class="layui-input-block">
+					<input type="text" id="operIp" name="operIp" required lay-verify="required" autocomplete="off"
+						   placeholder="" class="layui-input" disabled>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">请求URI</label>
+				<div class="layui-input-block">
+					<input type="text" id="operUri" name="operUri" required lay-verify="required" autocomplete="off"
+						   placeholder="" class="layui-input" disabled>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">操作人</label>
+				<div class="layui-input-block">
+					<input type="text" id="operUser" name="operUser" required lay-verify="required" autocomplete="off"
+						   placeholder="" class="layui-input" disabled>
+				</div>
+			</div>
+			<div class="layui-form-item">
+				<label class="layui-form-label">操作时间</label>
+				<div class="layui-input-block">
+					<input type="text" id="createTime" name="createTime" required lay-verify="required" autocomplete="off"
+						   placeholder="" class="layui-input" disabled>
+				</div>
+			</div>
+			<!--<div class="layui-form-item" style="margin-top:40px">
+				<div class="layui-input-block">
+					<button type="button" class="layui-btn layui-btn-primary" id="back">关闭</button>
+				</div>
+			</div>-->
+		</form>
+	</div>
+</div>
+
+<script type="text/html" id="toolbarDemo">
+	<div class="layui-btn-container">
+		<button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="remove">删除</button>
+	</div>
+</script>
+
+<script type="text/html" id="barDemo">
+	<a class="layui-btn layui-btn-xs" lay-event="view">查看</a>
+	<!--<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>-->
+</script>
+
+<script th:src="@{/static/js/jquery.min.js}" charset="utf-8"></script>
+<script th:src="@{/static/plugin/layui/layui.js}" charset="utf-8"></script>
+<script th:src="@{/static/js/app.js}" charset="utf-8"></script>
+
+<script>
+    layui.use(['jquery', 'table'], function () {
+        var table = layui.table;
+        var form = layui.form;
+
+        table.render({
+            elem: '#tb_operlog'
+            , url: ctx+'/operlog/list'
+            , method: 'post'
+            , toolbar: '#toolbarDemo' //开启头部工具栏，并为其绑定左侧模板
+            , defaultToolbar: ['filter', 'exports', 'print', { //自定义头部工具栏右侧图标。如无需自定义，去除该参数即可
+                title: '提示'
+                , layEvent: 'LAYTABLE_TIPS'
+                , icon: 'layui-icon-tips'
+            }]
+			, limit:20
+            , title: 'tb_operlog'
+            , cols: [
+                [
+                    {type: 'checkbox', fixed: 'left'},
+                    {field: 'id', title: 'ID', align: 'center',width: 80}
+                    , {field: 'operModule', title: '操作模块', align: 'center', width: 180}
+                    , {field: 'operMethod', title: '操作方法', align: 'center', width: 300}
+                    , {field: 'operType', title: '操作类型', align: 'center', width: 120}
+                    , {field: 'operDesc', title: '操作描述', align: 'center', width: 180}
+                    , {field: 'reqMethod', title: '请求方式', align: 'center', width: 120}
+                    , {field: 'operParam', title: '请求参数', align: 'center', width: 200}
+                    , {field: 'operIp', title: '请求IP', align: 'center', width: 180}
+                    , {field: 'operUri', title: '请求URI', align: 'center', width: 180}
+                    , {field: 'operUser', title: '操作人', align: 'center', width: 120}
+                    , {field: 'createTime', title: '操作时间', align: 'center', width: 180,templet:'<div>{{ layui.util.toDateString(d.createTime, "yyyy-MM-dd HH:mm:ss") }}</div>'}
+                    , {fixed: 'right', title: '操作', toolbar: '#barDemo', width:120}
+                ]
+            ]
+            , page: true
+            , request: {
+                pageName: 'pageNo' //页码的参数名称，默认：page
+                , limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            , parseData: function (res) { //res 即为原始返回的数据
+                return {
+                    "code": 0, //解析接口状态
+                    "msg": "", //解析提示文本
+                    "count": res.data.total, //解析数据长度
+                    "data": res.data.records //解析数据列表
+                };
+            }
+
+        });
+        var $ = layui.$, active = {
+            reload: function () {
+                var queryWhere = {};
+
+                var operDesc = $('#s_operDesc');
+                if (operDesc.val() != '') {
+                    queryWhere['operDesc'] = operDesc.val();
+                }
+                //执行重载
+                table.reload('tb_operlog', {
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                    , where: queryWhere
+                    , done: function (res, curr, count) {
+                        this.where = {};
+                    }
+                }, 'data');
+            }
+        };
+
+        $('.searchTable .layui-btn').on('click', function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+        //头工具栏事件
+        table.on('toolbar(tb_operlog)', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id);
+            var data = checkStatus.data; //获取选中的数据
+            var ids = [];
+            switch (obj.event) {
+                case 'remove':
+                {
+                    if(data.length === 0){
+                        layer.msg('请选择要删除的行');
+                    }else {
+                        layer.confirm('确定要删除吗？', function (index) {
+                            for (var i = 0; i < data.length; i++) {
+                                ids.push(data[i].id);
+                            }
+                            //layer.alert(JSON.stringify(ids));
+                            $.ajax({
+                                url: ctx+'/operlog/removes',
+                                type: 'POST',
+                                contentType: "application/json",
+                                dataType: "json",
+                                data: JSON.stringify(ids),
+                                success: function (result) {
+                                    if (result.code == 200) {
+                                        setTimeout(function () {
+                                            layer.closeAll();//关闭所有的弹出层
+                                            reloadTable(table,'tb_operlog')
+                                        }, 300);
+                                    }else {
+                                        layer.msg("操作失败！", {icon: 5});
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+               break;
+            }
+            ;
+        });
+
+
+        //监听行工具事件
+        table.on('tool(tb_operlog)', function (obj) {
+            var data = obj.data;
+            //console.log(obj)
+            if (obj.event === 'del') {
+                layer.confirm('真的删除行么', function (index) {
+                    $.ajax({
+                        type: "POST",
+                        url: ctx+"/operlog/remove",
+                        traditional: true,
+                        data: {
+                            id: data.id
+                        },
+                        success: function (data) {
+                            layer.close(index);
+                            var queryWhere = {};
+                            var userName$_ = $('#operDesc');
+                            if (userName$_.val() != '') {
+                                queryWhere['operDesc'] = userName$_.val();
+                            }
+                            //执行重载
+                            table.reload('tb_operlog', {
+                                page: {
+                                    curr: 1 //重新从第 1 页开始
+                                }
+                                , where: queryWhere
+                                , done: function (res, curr, count) {
+                                    this.where = {};
+                                }
+                            }, 'data');
+                        },
+                        error: function (e) {
+                            console.log("ERROR: ", e);
+                        }
+                    });
+                });
+            }
+            if (obj.event === 'view') {
+                var updateIndex = layer.open({
+                    //layer提供了5种层类型。可传入的值有：0（信息框，默认）1（页面层）2（iframe层）3（加载层）4（tips层）
+                    type: 1,
+                    title: "修改",
+                    area: ['600px', '680px'],
+                    content: $("#viewForm")//引用的弹出层的页面层的方式加载修改界面表单
+
+                });
+                //alert(JSON.stringify(data))
+                setFormValue(obj, data);
+            }
+        });
+
+        // 填充form
+        function setFormValue(obj, data){
+            if(data != null){
+                $("#operModule").val(data.operModule);
+                $("#operMethod").val(data.operMethod);
+                $("#operDesc").val(data.operDesc);
+                $("#operType").val(data.operType);
+                $("#operParam").val(data.operParam);
+                $("#operIp").val(data.operIp);
+                $("#operUri").val(data.operUri);
+                $("#operUser").val(data.operUser);
+                $("#createTime").val(data.createTime);
+                $("#reqMethod").val(data.reqMethod);
+            }
+        }
+
+        $("#back").on('click', function () {
+            layer.closeAll();
+        });
+    });
+</script>
+
+</body>
+</html>

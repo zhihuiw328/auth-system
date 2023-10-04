@@ -1,0 +1,91 @@
+<link rel="stylesheet" th:href="@{/static/plugin/ztree/css/metroStyle/metroStyle.css}"/>
+<div class="row-content am-cf">
+    <div class="row">
+        <div class="am-u-sm-12 am-u-md-12 am-u-lg-12">
+            <div class="widget am-cf">
+                <div class="widget-body am-fr">
+                    <!-- 资源树 -->
+                    <div class="am-form-group">
+                        <ul id="selectTree" class="ztree"></ul>
+                    </div>
+                    <div class="am-form-group">
+                        <div class="am-u-sm-10 layui-layer-btn">
+                            <a class="layui-layer-btn0" onclick="saveMenu()">提交</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="text" id="ctx" hidden="hidden" th:value="${#request.getContextPath()}">
+    </div>
+</div>
+<script th:src="@{/static/js/jquery.min.js}"></script>
+<script th:src="@{/static/plugin/layer-v2.3/layer.js}"></script>
+<script th:src="@{/static/js/app.js}"></script>
+<script th:src="@{/static/plugin/ztree/jquery.ztree.all.min.js}"></script>
+<script th:inline="javascript">
+    var setting = {
+        view: {
+            dblClickExpand: false
+        },
+        data: {
+            simpleData: {
+                enable: true,
+                pIdKey: "pid",
+            },
+            key : {  //节点数据
+                name : "menuName"//zTree 节点数据保存节点名称的属性名称。
+            }
+        },
+        check: {
+            enable: true,
+            chkStyle: "checkbox",
+            chkboxType: {"Y": "p", "N": "s"}
+        }
+    };
+    var zTree;
+    $.get(ctx+"/sysRole/getMenu/"+[[${role.id}]], function (r) {
+        zTree = $.fn.zTree.init($(".ztree"), setting, r);
+        zTree.expandAll(true);
+    });
+
+    var ids = [];
+
+    function saveMenu() {
+        var selectedIds = zTree.getCheckedNodes(true);
+        $.each(selectedIds, function (i, n) {
+            ids.push(n.id);
+        });
+        //alert(ids)
+        $.ajax({
+            type: "POST",
+            url: ctx+'/sysRole/saveMenu',
+            data: {"roleId": [[${role.id}]], "menuIds": ids},
+            beforeSend: function () {
+                index = layer.load();
+            },
+            success: function (resultdata) {
+                if (resultdata.success) {
+                    layer.msg(resultdata.message, {
+                        icon: 1,
+                        end: function () {
+                            // 重载父页面表格
+                            parent.layui.table.reload('SysRole');
+                            parent.layer.closeAll();
+                        }
+                    });
+                } else {
+                    layer.msg(resultdata.message, {
+                        icon: 5
+                    });
+                }
+            },
+            error: function (data, errorMsg) {
+                layer.close(index);
+                layer.msg(data.responseText, {
+                    icon: 2
+                });
+            }
+        });
+    }
+</script>
